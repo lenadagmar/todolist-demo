@@ -8,6 +8,8 @@ export default function App() {
   ])
   const [input, setInput] = useState('')
   const [filter, setFilter] = useState('all')
+  const [editingId, setEditingId] = useState(null)
+  const [editingText, setEditingText] = useState('')
   const dragItem = useRef(null)
   const dragOverItem = useRef(null)
 
@@ -22,6 +24,29 @@ export default function App() {
     setTodos(todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))
 
   const deleteTodo = (id) => setTodos(todos.filter((t) => t.id !== id))
+
+  const startEditing = (todo) => {
+    setEditingId(todo.id)
+    setEditingText(todo.text)
+  }
+
+  const saveEditing = () => {
+    if (editingId === null) return
+    const text = editingText.trim()
+    if (!text) {
+      setEditingId(null)
+      setEditingText('')
+      return
+    }
+    setTodos(todos.map((t) => (t.id === editingId ? { ...t, text } : t)))
+    setEditingId(null)
+    setEditingText('')
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditingText('')
+  }
 
   const handleDragStart = (index) => {
     dragItem.current = index
@@ -117,12 +142,42 @@ export default function App() {
                 )}
                 <button
                   onClick={() => toggleTodo(todo.id)}
-                  className={`flex-1 text-left ${
-                    todo.done ? 'line-through text-slate-400' : 'text-slate-800'
-                  }`}
+                  className="text-lg leading-none text-slate-400 hover:text-indigo-600"
+                  aria-label={todo.done ? 'Mark todo as active' : 'Mark todo as completed'}
                 >
-                  {todo.text}
+                  {todo.done ? '☑' : '☐'}
                 </button>
+                {editingId === todo.id ? (
+                  <input
+                    type="text"
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                    onBlur={saveEditing}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEditing()
+                      if (e.key === 'Escape') cancelEditing()
+                    }}
+                    autoFocus
+                    className="flex-1 px-2 py-1 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                ) : (
+                  <button
+                    onClick={() => startEditing(todo)}
+                    className={`group flex-1 text-left flex items-center justify-between gap-2 ${
+                      todo.done ? 'line-through text-slate-400' : 'text-slate-800'
+                    }`}
+                    aria-label={`Edit todo: ${todo.text}`}
+                    title="Click to edit"
+                  >
+                    <span className="truncate">{todo.text}</span>
+                    <span
+                      className="text-xs text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-hidden="true"
+                    >
+                      edit
+                    </span>
+                  </button>
+                )}
                 <button
                   onClick={() => deleteTodo(todo.id)}
                   className="text-slate-400 hover:text-red-500 text-lg font-bold px-2"
